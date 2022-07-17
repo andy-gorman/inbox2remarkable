@@ -2,8 +2,6 @@ import os
 import requests
 import pdfkit
 from requests.auth import HTTPBasicAuth
-from rmapy.document import ZipDocument
-from rmapy.api import Client
 
 def emails_query(account_id, mailbox_id):
   return [[ "Email/query", {
@@ -69,23 +67,16 @@ def fetch_emails(account_id, mailbox_id):
   ).json()
   return data["methodResponses"][3][1]["list"]
 
-def upload_to_remarkable(rm, emails):
-  newsletters =  [ i for i in rm.get_meta_items() if i.VissibleName == "Newsletters" ][0]
+def create_pdfs(emails):
   for email in emails:
-    for section in email["bodyValues"].values():
-      document = ZipDocument(doc=pdfkit.from_string(section["value"]))
-      i.upload(document, newsletters)
-         
-      
+    pdfkit.from_string(list(email["bodyValues"].values())[0]["value"], f'/tmp/newsletters/{email["subject"]}.pdf')
+
 def run():
   account_id = os.environ["FASTMAIL_ACCOUNT_ID"]
   mailbox_id = fetch_inbox_id(account_id)
   emails = fetch_emails(account_id, mailbox_id)
 
-  rm = Client()
-  rm.renew_token()
-  print(rm.is_auth())
-  upload_to_remarkable(rm, emails)
+  create_pdfs(emails)
 
 if __name__ == '__main__':
   run()
